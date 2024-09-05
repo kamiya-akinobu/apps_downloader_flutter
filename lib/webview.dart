@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+@Deprecated('exchange in_app_webview')
 class WebViewPage extends ConsumerWidget {
   const WebViewPage({
     super.key,
@@ -29,7 +30,9 @@ class WebViewPage extends ConsumerWidget {
           child: Column(
             children: [
               Expanded(
-                child: WebViewWidget(controller: controller),
+                child: WebViewWidget(
+                  controller: controller,
+                ),
               ),
               SizedBox(
                 height: 50,
