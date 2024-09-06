@@ -35,7 +35,7 @@ class InAppWebViewPage extends ConsumerWidget {
               Expanded(
                 child: InAppWebView(
                   initialUrlRequest: URLRequest(
-                    url: WebUri('https://apps-downloader.dmmga.me/#/'),
+                    url: WebUri(Constants.appDownloaderUrl),
                   ),
                   initialSettings:
                       InAppWebViewSettings(useOnDownloadStart: true),
@@ -115,6 +115,29 @@ class InAppWebViewPage extends ConsumerWidget {
                           icon: const Icon(
                             Icons.download,
                           )),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        onPressed: () {
+                          showDialog<void>(
+                              context: context,
+                              builder: (_) {
+                                return AlertDialog(
+                                  content: Text(
+                                      'AppVersion: ${Constants.appVersion} (${Constants.buildNumber})${Constants.newLine}${Constants.newLine}${Constants.caution01}${Constants.newLine}${Constants.caution02}'),
+                                  actions: [
+                                    GestureDetector(
+                                        child: const Text('OK'),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                        }),
+                                  ],
+                                );
+                              });
+                        },
+                        icon: const Icon(Icons.info),
+                      ),
                     ),
                   ],
                 ),
