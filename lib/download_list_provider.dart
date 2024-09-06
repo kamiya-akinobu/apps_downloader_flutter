@@ -12,12 +12,27 @@ class DownloadListNotifier extends ChangeNotifier {
     return Constants.downloadDirectory?.listSync();
   }
 
+  Future<void> refresh() async {
+    notifyListeners();
+  }
+
+  Future<void> rename(File file, String rename) async {
+    debugPrint(file.parent.path);
+    await file.rename('${file.parent.path}/$rename');
+    notifyListeners();
+  }
+
   Future<void> allDelete() async {
     final list = Constants.downloadDirectory!.listSync();
     for (var file in list) {
       file.deleteSync();
     }
 
+    notifyListeners();
+  }
+
+  Future<void> delete(File file) async {
+    file.deleteSync();
     notifyListeners();
   }
 }
