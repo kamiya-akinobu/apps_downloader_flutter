@@ -50,7 +50,7 @@ class DownloadList extends ConsumerWidget {
                   },
                 )
               : Container(),
-          files!.isNotEmpty
+          files.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: () => notifier.refresh,
@@ -61,9 +61,9 @@ class DownloadList extends ConsumerWidget {
       body: files.isNotEmpty
           ? ListView.builder(
               padding: const EdgeInsets.all(8.0),
-              itemCount: files?.length ?? 0,
+              itemCount: files.length,
               itemBuilder: (BuildContext context, int index) {
-                final file = File(files![index].path);
+                final file = File(files[index].path);
                 return GestureDetector(
                   onTap: () async {
                     await OpenFile.open(file.path);
