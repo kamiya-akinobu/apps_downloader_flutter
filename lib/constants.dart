@@ -17,8 +17,6 @@ class Constants {
   static const String caution02 = '社内であってもJenkinsが表示されない場合はVPN接続してください';
   static const newLine = '\n';
 
-
-
   static Directory? downloadDirectory;
   static String downloadDirectoryPath = '';
   static String appVersion = '';
