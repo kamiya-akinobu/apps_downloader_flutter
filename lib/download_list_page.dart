@@ -50,50 +50,28 @@ class DownloadList extends ConsumerWidget {
                   },
                 )
               : Container(),
-          files.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => notifier.refresh,
-                )
-              : Container(),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () async => notifier.refresh,
+          ),
         ],
       ),
       body: files.isNotEmpty
-          ? ListView.builder(
-              padding: const EdgeInsets.all(8.0),
+          ? ListView.separated(
+              // padding: const EdgeInsets.all(8.0),
               itemCount: files.length,
               itemBuilder: (BuildContext context, int index) {
                 final file = File(files[index].path);
-                return GestureDetector(
+                return ListTile(
+                  title: Text(basename(file.path)),
+                  subtitle: Text(file.lastModifiedSync().toString()),
+                  trailing: _getPopupMenuButton(context, file, notifier),
                   onTap: () async {
                     await OpenFile.open(file.path);
                   },
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              basename(file.path),
-                              style: const TextStyle(fontSize: 16.0),
-                            ),
-                            Text(
-                              file.lastModifiedSync().toString(),
-                              style: const TextStyle(fontSize: 12.0),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20.0, vertical: 10.0),
-                        child: _getPopupMenuButton(context, file, notifier),
-                      ),
-                    ],
-                  ),
                 );
               },
+              separatorBuilder: (context, index) => const Divider(height: 0.5),
             )
           : const Center(
               child: Text('No Downloaded files'),
@@ -111,7 +89,16 @@ class DownloadList extends ConsumerWidget {
         return [
           PopupMenuItem<String>(
               child: const ListTile(
+                title: Text('Install'),
+                leading: Icon(Icons.install_mobile),
+              ),
+              onTap: () async {
+                await OpenFile.open(file.path);
+              }),
+          PopupMenuItem<String>(
+              child: const ListTile(
                 title: Text('Rename'),
+                leading: Icon(Icons.drive_file_rename_outline_rounded),
               ),
               onTap: () {
                 controller.text = basename(file.path);
@@ -143,6 +130,7 @@ class DownloadList extends ConsumerWidget {
           PopupMenuItem<String>(
             child: const ListTile(
               title: Text('Delete'),
+              leading: Icon(Icons.delete),
             ),
             onTap: () {
               showDialog<void>(
