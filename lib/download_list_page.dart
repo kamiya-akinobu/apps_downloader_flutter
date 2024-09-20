@@ -1,73 +1,34 @@
 import 'dart:io';
 
-import 'package:app_downloader_flutter/constants.dart';
-import 'package:app_downloader_flutter/download_list_provider.dart';
+import 'package:apps_downloader_flutter/constants.dart';
+import 'package:apps_downloader_flutter/download_list_view_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:open_file/open_file.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path/path.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-class DownloadList extends ConsumerWidget {
-  const DownloadList({super.key});
+class DownloadListPage extends ConsumerWidget {
+  const DownloadListPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.watch(downloadListProvider);
-    final files = notifier.getDownloadList();
+    final provider = ref.watch(downloadListProvider);
+    final files = provider.getDownloadList();
 
     Permission.requestInstallPackages.request();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('ダウンロード一覧'),
-        actions: [
-          files!.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    showDialog<void>(
-                        context: context,
-                        builder: (_) {
-                          return AlertDialog(
-                            title: const Text('All Delete'),
-                            actions: [
-                              GestureDetector(
-                                  child: const Text('No'),
-                                  onTap: () {
-                                    Navigator.pop(context);
-                                  }),
-                              const SizedBox(width: 16),
-                              GestureDetector(
-                                  child: const Text('Yes'),
-                                  onTap: () {
-                                    notifier.allDelete();
-                                    Navigator.pop(context);
-                                  })
-                            ],
-                          );
-                        });
-                  },
-                )
-              : Container(),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () async => notifier.refresh,
-          ),
-        ],
-      ),
-      body: files.isNotEmpty
+    return SafeArea(
+      child: files!.isNotEmpty
           ? ListView.separated(
-              // padding: const EdgeInsets.all(8.0),
               itemCount: files.length,
               itemBuilder: (BuildContext context, int index) {
                 final file = File(files[index].path);
                 return ListTile(
                   title: Text(basename(file.path)),
                   subtitle: Text(file.lastModifiedSync().toString()),
-                  trailing: _getPopupMenuButton(context, file, notifier),
+                  trailing: _getPopupMenuButton(context, file, provider),
                   onTap: () async {
-                    await OpenFile.open(file.path);
+                    await provider.openFile(file.path);
                   },
                 );
               },
@@ -80,7 +41,10 @@ class DownloadList extends ConsumerWidget {
   }
 
   Widget _getPopupMenuButton(
-      BuildContext context, File file, DownloadListNotifier notifier) {
+    BuildContext context,
+    File file,
+    DownloadListViewModel provider,
+  ) {
     TextEditingController controller = TextEditingController();
     return PopupMenuButton(
       position: PopupMenuPosition.under,
@@ -88,45 +52,47 @@ class DownloadList extends ConsumerWidget {
       itemBuilder: (_) {
         return [
           PopupMenuItem<String>(
-              child: const ListTile(
-                title: Text('Install'),
-                leading: Icon(Icons.install_mobile),
-              ),
-              onTap: () async {
-                await OpenFile.open(file.path);
-              }),
+            child: const ListTile(
+              title: Text('Install'),
+              leading: Icon(Icons.install_mobile),
+            ),
+            onTap: () async {
+              await provider.openFile(file.path);
+            },
+          ),
           PopupMenuItem<String>(
-              child: const ListTile(
-                title: Text('Rename'),
-                leading: Icon(Icons.drive_file_rename_outline_rounded),
-              ),
-              onTap: () {
-                controller.text = basename(file.path);
-                showDialog<void>(
-                  context: context,
-                  builder: (_) {
-                    return AlertDialog(
-                      title: const Text('Rename'),
-                      content: TextField(
-                        controller: controller,
+            child: const ListTile(
+              title: Text('Rename'),
+              leading: Icon(Icons.drive_file_rename_outline_rounded),
+            ),
+            onTap: () {
+              controller.text = basename(file.path);
+              showDialog<void>(
+                context: context,
+                builder: (_) {
+                  return AlertDialog(
+                    title: const Text('Rename'),
+                    content: TextField(
+                      controller: controller,
+                    ),
+                    actions: [
+                      GestureDetector(
+                        child: const Text('Cancel'),
+                        onTap: () => Navigator.pop(context),
                       ),
-                      actions: [
-                        GestureDetector(
-                          child: const Text('Cancel'),
-                          onTap: () => Navigator.pop(context),
-                        ),
-                        GestureDetector(
-                          child: const Text('Modify'),
-                          onTap: () {
-                            notifier.rename(file, controller.text);
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    );
-                  },
-                );
-              }),
+                      GestureDetector(
+                        child: const Text('Modify'),
+                        onTap: () {
+                          provider.rename(file, controller.text);
+                          Navigator.pop(context);
+                        },
+                      )
+                    ],
+                  );
+                },
+              );
+            },
+          ),
           PopupMenuItem<String>(
             child: const ListTile(
               title: Text('Delete'),
@@ -134,28 +100,31 @@ class DownloadList extends ConsumerWidget {
             ),
             onTap: () {
               showDialog<void>(
-                  context: context,
-                  builder: (_) {
-                    return AlertDialog(
-                      title: const Text('Delete Confirmation'),
-                      content: Text(
-                          '${basename(file.path)} ${Constants.newLine} is Delete OK?'),
-                      actions: [
-                        GestureDetector(
-                            child: const Text('No'),
-                            onTap: () {
-                              Navigator.pop(context);
-                            }),
-                        const SizedBox(width: 16),
-                        GestureDetector(
-                            child: const Text('Yes'),
-                            onTap: () {
-                              notifier.delete(file);
-                              Navigator.pop(context);
-                            })
-                      ],
-                    );
-                  });
+                context: context,
+                builder: (_) {
+                  return AlertDialog(
+                    title: const Text('Delete Confirmation'),
+                    content: Text(
+                        '${basename(file.path)} ${Constants.newLine} is Delete OK?'),
+                    actions: [
+                      GestureDetector(
+                        child: const Text('No'),
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                      GestureDetector(
+                        child: const Text('Yes'),
+                        onTap: () {
+                          provider.delete(file);
+                          Navigator.pop(context);
+                        },
+                      )
+                    ],
+                  );
+                },
+              );
             },
           ),
         ];

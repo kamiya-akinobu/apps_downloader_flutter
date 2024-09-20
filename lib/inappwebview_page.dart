@@ -1,151 +1,80 @@
-import 'package:app_downloader_flutter/constants.dart';
-import 'package:app_downloader_flutter/download_list_page.dart';
-import 'package:app_downloader_flutter/inappwebview_provider.dart';
+import 'package:apps_downloader_flutter/constants.dart';
+import 'package:apps_downloader_flutter/inappwebview_view_model.dart';
+import 'package:apps_downloader_flutter/provider_config.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// global keep
-InAppWebViewController? webViewController;
-
-class InAppWebViewPage extends ConsumerWidget {
+class InAppWebViewPage extends StatefulHookConsumerWidget {
   const InAppWebViewPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.watch(inAppWebViewProvider);
+  ConsumerState<ConsumerStatefulWidget> createState() =>
+      _InAppWebViewPageState();
+}
+
+/// AutomaticKeepAliveClientMixinをwithするためにConsumerStateを継承
+class _InAppWebViewPageState extends ConsumerState<InAppWebViewPage>
+    with AutomaticKeepAliveClientMixin {
+
+  // タブ切り替えの毎に更新させない
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
     Permission.notification.request();
-    return Scaffold(
-      body: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) async {
-          if (webViewController != null &&
-              await webViewController!.canGoBack()) {
-            webViewController!.goBack();
-          } else {
-            SystemNavigator.pop();
-          }
-        },
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: InAppWebView(
-                  initialUrlRequest: URLRequest(
-                    url: WebUri(Constants.appDownloaderUrl),
-                  ),
-                  initialSettings:
-                      InAppWebViewSettings(useOnDownloadStart: true),
-                  onWebViewCreated: (controller) {
-                    webViewController = controller;
-                  },
-                  shouldOverrideUrlLoading:
-                      (controller, navigationAction) async {
-                    if (navigationAction.request.url != null &&
-                        navigationAction.shouldPerformDownload != null) {
-                      return NavigationActionPolicy.DOWNLOAD;
-                    }
-                    return NavigationActionPolicy.ALLOW;
-                  },
-                  onDownloadStartRequest: (controller, url) async {
-                    final path = Constants.downloadDirectoryPath;
-                    String fileName = await notifier.getDownloadFileName(
-                        path, url.suggestedFilename!);
-                    await FlutterDownloader.enqueue(
-                      url: url.url.toString(),
-                      fileName: fileName,
-                      savedDir: path,
-                      showNotification: true,
-                      openFileFromNotification: true,
-                    );
-                  },
-                ),
-              ),
-              SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        onPressed: () {
-                          webViewController?.goBack();
-                        },
-                        icon: const Icon(
-                          Icons.arrow_back_ios,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        onPressed: () {
-                          webViewController?.goForward();
-                        },
-                        icon: const Icon(
-                          Icons.arrow_forward_ios,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                        onPressed: () {
-                          webViewController?.reload();
-                        },
-                        icon: const Icon(
-                          Icons.replay,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: IconButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const DownloadList(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.download,
-                          )),
-                    ),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        onPressed: () {
-                          showDialog<void>(
-                              context: context,
-                              builder: (_) {
-                                return AlertDialog(
-                                  content: Text(
-                                      'AppVersion: ${Constants.appVersion} (${Constants.buildNumber})${Constants.newLine}${Constants.newLine}${Constants.caution01}${Constants.newLine}${Constants.caution02}'),
-                                  actions: [
-                                    GestureDetector(
-                                        child: const Text('OK'),
-                                        onTap: () {
-                                          Navigator.pop(context);
-                                        }),
-                                  ],
-                                );
-                              });
-                        },
-                        icon: const Icon(Icons.info),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            ],
+
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: _createInAppWebView(context),
           ),
-        ),
+        ],
       ),
+    );
+  }
+
+  Widget _createInAppWebView(BuildContext context) {
+    final provider = ref.watch(inAppWebViewProvider);
+
+    return InAppWebView(
+      initialUrlRequest: URLRequest(
+        url: WebUri(Constants.appsDownloaderUrl),
+      ),
+      initialSettings: InAppWebViewSettings(useOnDownloadStart: true),
+      onWebViewCreated: (controller) {
+        ref.read(inAppWebViewStateProvider.notifier).state = controller;
+      },
+      shouldOverrideUrlLoading: (controller, navigationAction) async {
+        if (navigationAction.request.url != null &&
+            navigationAction.shouldPerformDownload != null) {
+          return NavigationActionPolicy.DOWNLOAD;
+        }
+        return NavigationActionPolicy.ALLOW;
+      },
+      onDownloadStartRequest: (controller, url) async {
+        await provider.download(url);
+      },
+      onLoadStop: (controller, url) async {
+        // 状態管理
+        controller.canGoBack().then(
+            (onValue) => ref.read(canGoBackProvider.notifier).state = onValue);
+        controller.canGoForward().then((onValue) =>
+            ref.read(canGoForwardProvider.notifier).state = onValue);
+      },
+      onReceivedHttpError: (controller, request, errorResponse) async {
+        if (errorResponse.statusCode == 403) {
+          Fluttertoast.showToast(
+            msg: 'VPNの接続を確認してみてください',
+            toastLength: Toast.LENGTH_LONG,
+          );
+        }
+      },
     );
   }
 }

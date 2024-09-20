@@ -1,13 +1,14 @@
 import 'dart:io';
 
-import 'package:app_downloader_flutter/constants.dart';
+import 'package:apps_downloader_flutter/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
 
-final downloadListProvider = ChangeNotifierProvider<DownloadListNotifier>(
-    (ref) => DownloadListNotifier());
+final downloadListProvider = ChangeNotifierProvider<DownloadListViewModel>(
+    (ref) => DownloadListViewModel());
 
-class DownloadListNotifier extends ChangeNotifier {
+class DownloadListViewModel extends ChangeNotifier {
   List<FileSystemEntity>? getDownloadList() {
     return Constants.downloadDirectory?.listSync();
   }
@@ -16,10 +17,15 @@ class DownloadListNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void>openFile(String filePath) async {
+    await OpenFile.open(filePath);
+  }
+
   Future<void> rename(File file, String rename) async {
     debugPrint(file.parent.path);
     await file.rename('${file.parent.path}/$rename');
-    notifyListeners();
+
+    await refresh();
   }
 
   Future<void> allDelete() async {
@@ -28,11 +34,11 @@ class DownloadListNotifier extends ChangeNotifier {
       file.deleteSync();
     }
 
-    notifyListeners();
+    await refresh();
   }
 
   Future<void> delete(File file) async {
     file.deleteSync();
-    notifyListeners();
+    await refresh();
   }
 }

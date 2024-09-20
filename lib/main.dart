@@ -1,5 +1,5 @@
-import 'package:app_downloader_flutter/constants.dart';
-import 'package:app_downloader_flutter/inappwebview_page.dart';
+import 'package:apps_downloader_flutter/constants.dart';
+import 'package:apps_downloader_flutter/main_screen_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       // home: const MyHomePage(title: 'Flutter Demo Home Page'),
-      home: const InAppWebViewPage(),
+      home: const MainScreenPage(),
     );
   }
 }
