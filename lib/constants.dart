@@ -12,9 +12,11 @@ class Constants {
     _init();
   }
 
-  static const String appDownloaderUrl = 'https://apps-downloader.dmmga.me/#/';
-  static const String caution01 = 'app_downloaderが表示されない場合はネットワークをご確認ください';
+  static const String appsDownloaderUrl = 'https://apps-downloader.dmmga.me/#/';
+  static const String caution01 = 'apps_downloaderが表示されない場合はネットワークをご確認ください';
   static const String caution02 = '社内であってもJenkinsが表示されない場合はVPN接続してください';
+  static const String caution03 = '開発者は絵心とセンスがないのでテンプレ的アプリのUIなのはご了承ください…';
+  static const String caution04 = 'ご意見、ご要望等は遠慮なく開発者までお寄せください';
   static const newLine = '\n';
 
   static Directory? downloadDirectory;

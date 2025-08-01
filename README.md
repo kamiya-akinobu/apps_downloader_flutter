@@ -1,4 +1,4 @@
-# app_downloader_flutter
+# apps_downloader_flutter
 
 Games Store Downloader
 
